@@ -1,8 +1,9 @@
-from reportlab.platypus import SimpleDocTemplate
+
+from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate
 from reportlab.platypus import Table
 from reportlab.platypus import TableStyle
-from reportlab.lib import colors
 
 # List of Lists
 data = [
