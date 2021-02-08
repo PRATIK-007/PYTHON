@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+{% load static%}
+<html>
+<head>
+	<title>Result </title>
+    <link rel="stylesheet" href="{% static 'css/frequency.css' %}">
+    <style>
+        .table1{
+    
+            border-collapse: True;
+        }
+    </style>
+</head>
+<body>
+	<div class="fo">
+        <h1 class="res">Result is </h1>
+        <H3 class="res">{{len}}</H3>
+        
+        <table class="table1">
+            <th>Words</th>
+            <th>Frequency</th>
+            {% for word,counttotal in worly.items %}
+                <tr>
+                
+                    <td> {{ word }} </td>
+                    <td>{{counttotal}}</td>
+                
+                </tr>
+            {% endfor %}
+        </table>
+           
+        
+    </div>
+</body>
+</html>

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+{% load static%}
+<html>
+<head>
+	<title>Frequency </title>
+	<link rel="stylesheet" href="{% static 'css/frequency.css' %}">
+</head>
+<body>
+	<div class="url_fo">
+		<form action="{% url 'result' %} " method="post">
+			{% csrf_token %}
+
+			<h1 class="h11">Welcome to Word Counter</h1>
+			<input class="url_in"type="url" name="url_p" placeholder="enter url" required />
+			<br/>
+			<input class="sub"type = "submit" value="count"/>
+		</form>
+	</div>
+
+</body>
+</html>
+
