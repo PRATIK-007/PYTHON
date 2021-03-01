@@ -2,22 +2,20 @@ import tkinter as tk
 from tkinter import ttk
 from nsepy import *
 import nsepy
+import numpy as np
+import pandas as pd
 from datetime import date
-import datetime
-import matplotlib as plt
 import matplotlib.pyplot as plt1
 import mysql.connector
 import threading
-import stock1
-from statistics import mean
 from PIL import ImageTk, Image
-import pandas as pd
-from sklearn.tree import DecisionTreeRegressor
-from sklearn.model_selection import train_test_split
-import random
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
-import numpy as np
 import matplotlib.dates as mdates
+from sklearn.preprocessing import MinMaxScaler
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense , Dropout , LSTM
+import datetime as dt
+
 #  connector for databse
 my_connect = mysql.connector.connect(
     host="localhost",
@@ -37,21 +35,21 @@ file1 = pd.read_excel("mcap.xlsx")
 print(file1)
 l_company = file1["Company Name"]
 l_symbol = file1['Symbol']
-final_list = list(map(lambda x,y:x+"::"+y,l_company,l_symbol))
+final_list = list(map(lambda x, y: x + "::" + y, l_company, l_symbol))
 print(final_list)
-test_list =final_list
+test_list = final_list
 test_list1 = final_list
+
+
 class Stock:
 
     def PageOneGui(self):
-
-
 
         my_cursor.execute("""create table IF NOT EXISTS stock_table (stocks_id int auto_increment primary key,
                                                     user_id int(10), company_name varchar(30),
                                                     buy_at float(3),units int,
                                                     total_amount float(30)
-                                                    
+
                                                     );
                                     """)
         my_cursor.execute("""create table IF NOT EXISTS user (user_id int auto_increment primary key,
@@ -95,17 +93,15 @@ class Stock:
         self.v = tk.IntVar()
         self.v.set(1)
 
-    # Label and Searchbox for entering tickers
+        # Label and Searchbox for entering tickers
         tk.Label(Home_t, text="ENTER COMPANY : ", bg="#D2D7CE", font=("Verdana", 11)).place(relx=0.331, rely=0.1,
                                                                                             anchor="center")
         self.searchbox = tk.Entry(Home_t, textvariable=self.tickerSymbol, background="#E9EFE5", fg="#639A36",
                                   font=("Verdana", 12),
                                   borderwidth=0)
-        self.searchbox.place(relx=0.5, rely=0.1,relwidth=0.2, anchor="center")
+        self.searchbox.place(relx=0.5, rely=0.1, relwidth=0.2, anchor="center")
 
-
-
-    # Radio Buttons
+        # Radio Buttons
         tk.Label(Home_t, text="   Predict For  ", font=("Verdana", 15), bg="#D2D7CE").place(relx=0.5, rely=0.15,
                                                                                             anchor="center")
 
@@ -113,7 +109,6 @@ class Stock:
                                  value=10, bg="#D2D7CE").place(relx=0.475, rely=0.2, anchor="center")
         self.d4 = tk.Radiobutton(Home_t, text="15 days", font=("Verdana", 10), variable=self.v, command=self.ShowChoice,
                                  value=15, bg="#D2D7CE").place(relx=0.525, rely=0.2, anchor="center")
-
 
         # Search button
         self.searchbutton = tk.Button(Home_t, text="Predict", bg='#878786', fg="white", height=2, width=20,
@@ -134,29 +129,29 @@ class Stock:
         self.listbox_update(test_list)
 
         # all of Trading page
-# company name and entry box
+        # company name and entry box
 
         tk.Label(Trading, text="ENTER Company : ", font=("Verdana", 11), bg="#D2D7CE").place(relx=0.331, rely=0.1,
-                                                                                                   anchor="center")
+                                                                                             anchor="center")
 
         self.tickerbox = tk.Entry(Trading, textvariable=self.tickerSymbol1, background="#E9EFE5",
-                                fg="#639A36", font=("Verdana", 12),
-                                borderwidth=0)
-        self.tickerbox.place(relx=0.5, rely=0.1,relwidth=0.2, anchor="center")
-# no of units entry and label
+                                  fg="#639A36", font=("Verdana", 12),
+                                  borderwidth=0)
+        self.tickerbox.place(relx=0.5, rely=0.1, relwidth=0.2, anchor="center")
+        # no of units entry and label
         tk.Label(Trading, text="ENTER NO OF UNITS : ", font=("Verdana", 11), bg="#D2D7CE").place(relx=0.337, rely=0.145,
                                                                                                  anchor="center")
 
         self.tickerbox1 = tk.Entry(Trading, textvariable=self.units_no, background="#E9EFE5",
-                                  fg="#639A36", font=("Verdana", 12),
-                                  borderwidth=0)
-        self.tickerbox1.place(relx=0.5, rely=0.145,relwidth=0.2, anchor="center")
-# buy button
+                                   fg="#639A36", font=("Verdana", 12),
+                                   borderwidth=0)
+        self.tickerbox1.place(relx=0.5, rely=0.145, relwidth=0.2, anchor="center")
+        # buy button
 
         self.buybutton = tk.Button(Trading, text="BUY", bg='#878786', fg="white", height=2, width=20,
                                    font=("Verdana", 10), command=self.buy_stock).place(
             relx=0.5, rely=0.255, anchor="center")
-# table of trading
+        # table of trading
 
         self.id = 0
         self.iid = 0
@@ -169,7 +164,7 @@ class Stock:
         self.tv.heading(2, text="units")
         self.tv.heading(3, text="buy at")
         self.tv.heading(4, text="Total amount")
-#delete button
+        # delete button
         self.delete_button = tk.Button(Trading, text="SELL", bg='#878786', fg="white", height=2, width=20,
                                        font=("Verdana", 10), command=self.delete_data)
         self.delete_button.place(relx=0.5, rely=0.4, anchor="center")
@@ -178,11 +173,11 @@ class Stock:
         vsb.place(relx=.988, rely=.08, height=280)
 
         self.tv.configure(yscrollcommand=vsb.set)
-# listbox for trading
+        # listbox for trading
 
         self.listbox1 = tk.Listbox(Trading, background="#E9EFE5", fg="#639A36",
-                                  font=("Verdana", 12),
-                                  borderwidth=0)
+                                   font=("Verdana", 12),
+                                   borderwidth=0)
         vsb = ttk.Scrollbar(self.listbox1, orient="horizontal", command=self.listbox1.xview)
         vsb.place(relx=0, rely=0.9, relwidth=1)
         self.listbox1.configure(xscrollcommand=vsb.set, height=10)
@@ -196,15 +191,13 @@ class Stock:
         thread1 = threading.Thread(target=self.print_data)
         thread1.start()
 
-    def on_change(self,*args):
-
+    def on_change(self, *args):
 
         value = self.tickerSymbol.get()
         value = value.strip().lower()
-        print("value : ",value)
+        print("value : ", value)
         # get data from test_list
         if value == '':
-
 
             self.listbox.place_forget()
 
@@ -225,7 +218,7 @@ class Stock:
                     # update data in listbox
         self.listbox_update(data3)
 
-    def listbox_update(self,data3):
+    def listbox_update(self, data3):
         # delete previous data
         self.listbox.delete(0, 'end')
 
@@ -236,15 +229,14 @@ class Stock:
         for item in data3:
             self.listbox.insert('end', item)
 
-
-    def on_select(self,event):
+    def on_select(self, event):
         # display element selected on list
         print('(event) previous:', event.widget.get('active'))
         self.name = event.widget.get(event.widget.curselection())
         self.ls1 = self.name.split("::")
         print(self.ls1[1])
-        print('(event) current:',self.name)
-        self.searchbox.delete(0,'end')
+        print('(event) current:', self.name)
+        self.searchbox.delete(0, 'end')
         self.searchbox.insert(string=self.name, index=1)
         print("\n\n\n", self.tickerSymbol.get(), "             ", self.name)
         if self.tickerSymbol.get() == self.name:
@@ -252,13 +244,12 @@ class Stock:
         else:
             self.listbox.place(relwidth=0.2, relx=0.5, rely=0.25, anchor="center")
 
-
-    def on_change1(self,*args):
+    def on_change1(self, *args):
         # print(args)
 
         value1 = self.tickerSymbol1.get()
         value1 = value1.strip().lower()
-        print("value : ",value1)
+        print("value : ", value1)
         # get data from test_list
         if value1 == '':
 
@@ -282,7 +273,7 @@ class Stock:
                     # update data in listbox
         self.listbox_update1(data4)
 
-    def listbox_update1(self,data4):
+    def listbox_update1(self, data4):
         # delete previous data
         self.listbox1.delete(0, 'end')
 
@@ -297,21 +288,20 @@ class Stock:
         # if z == 0:
         #     self.listbox.configure(height=0)
 
-    def on_select1(self,event):
+    def on_select1(self, event):
         # display element selected on list
         print('(event) previous1:', event.widget.get('active'))
         self.name1 = event.widget.get(event.widget.curselection())
         self.ls11 = self.name1.split("::")
         print(self.ls11[1])
-        print('(event) current1:',self.name1)
-        self.tickerbox.delete(0,'end')
+        print('(event) current1:', self.name1)
+        self.tickerbox.delete(0, 'end')
         self.tickerbox.insert(string=self.name1, index=1)
         print("\n\n\n", self.tickerSymbol.get(), "             ", self.name1)
         if self.tickerSymbol1.get() == self.name1:
             self.listbox1.place_forget()
         else:
             self.listbox1.place(relwidth=0.2, relx=0.5, rely=0.25, anchor="center")
-
 
     def buy_stock(self):
         tickers1 = self.ls11[1]
@@ -325,7 +315,7 @@ class Stock:
     def validation_for_Trade(self, tickers1, units):
         data = nsepy.live.get_quote(symbol=tickers1)
         print(data)
-        if (len(data['data'])==0):
+        if (len(data['data']) == 0):
             self.popupmsg("ENTER VALID NAME")
             self.searchbox.delete(0, 'END')
         elif units == 0:
@@ -390,8 +380,7 @@ class Stock:
 
         self.graphl = []
 
-
-        f1 = self.pred(self.data, self.v.get(),self.tickerSymbol.get())
+        f1 = self.pred(self.data, self.v.get(), self.tickerSymbol.get())
         f2 = self.pred1(self.data)
         self.graphl.append(f1)
         self.graphl.append(f2)
@@ -485,89 +474,152 @@ class Stock:
             self.iid = self.iid + 1
             self.id = self.id + 1
 
-    def pred(self, data, choice,symbol):
-        print(symbol)
+    def pred(self, data, choice, symbol):
+        print("symbol: ",symbol)
+        print("data : ",data)
+        print("choice : ",choice)
         sym = symbol.split('::')
 
-        liv_d = nsepy.live.get_quote(symbol=sym[1])
-        liv_d2 = liv_d['data']
-        liv_d3 = liv_d2[0]
-        ls = [1,2,3,4,5,-1,-2,-3]
-        buy_at = liv_d3['lastPrice']
-        o = liv_d3['open']
-        d_h = liv_d3['dayHigh']
-        d_l = liv_d3['dayLow']
-        data = data.drop(
-            columns=['Deliverable Volume', '%Deliverble', 'VWAP', 'Turnover', 'Symbol', 'Series', 'Trades', 'Last','Volume'],
-            axis=1)
-        dup_d = data.tail(choice)
-        Prev_close = dup_d['Prev Close']
-        Open = dup_d['Open']
-        Close = dup_d['Close']
-        high = dup_d['High']
-        Low = dup_d['Low']
+        company = sym[1]
+        start = dt.date(2019, 1, 1)
+        end = dt.date(2020, 1, 1)
 
-        print(dup_d.head(10))
+        pd.set_option('display.max_columns', None)
+        # Load Data
+        data = get_history(symbol=company, start=start, end=end)
+        # data = web.DataReader( company , 'yahoo',start , date.today())
 
-        data.loc[pd.to_datetime(datetime.date.today())] =[ float(buy_at), float(o),float(d_h),float(d_l), float(buy_at)]
-        for i in range(choice):
-
-            avg_op = mean(data['Open'])
-            print(avg_op)
-            avg_cl = mean(data['Close'])
-            avg_pc = mean(data['Prev Close'])
-            avg_hi = mean(data['High'])
-            avg_lo = mean(data['Low'])
-            date2 = datetime.date.today() + datetime.timedelta(days=i+1)
-
-
-            data.loc[pd.to_datetime(date2)] = [avg_pc+random.choice(ls), avg_op+random.choice(ls),
-                                               avg_hi+random.choice(ls), avg_lo+random.choice(ls),
-                                               avg_cl+random.choice(ls)]
+        data = data.drop('Symbol', axis=1)
+        data = data.drop('Series', axis=1)
         print(data)
 
-        print("data \n\n")
+        scaler = MinMaxScaler(feature_range=(0, 1))
+        scaled_data = scaler.fit_transform(data['Close'].values.reshape(-1, 1))
+        print("---------------------------scaled data-------------------------------")
+        print(scaled_data)
+        prediction_days = 60
 
-        print("data vasssssssssssssssssluuuuuuuuuuuuuuuuus\n", data)
-        future_days = choice
-        data['Prediction'] = data[['Close']].shift(-future_days)
+        x_train = []
+        y_train = []
 
-        X = np.array(data.drop(['Prediction'], 1))[:-future_days]
-        print(X)
+        for x in range(prediction_days, len(scaled_data)):
+            x_train.append(scaled_data[x - prediction_days:x, 0])
+            y_train.append(scaled_data[x, 0])
 
-        y = np.array(data['Prediction'])[:-future_days]
-        print(y)
+        # print("---------------------------x train and y train-------------------------------")
+        # print(x_train,"    ",y_train)
+        x_train, y_train = np.array(x_train), np.array(y_train)
+        x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))
+        # print("---------------------------x train reshape-------------------------------")
+        # print(x_train)
+        # Build The Model
+        model = Sequential()
 
-        x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.25)
+        model.add(LSTM(units=50, return_sequences=True, input_shape=(x_train.shape[1], 1)))
+        model.add(Dropout(0.2))
+        model.add(LSTM(units=50, return_sequences=True))
+        model.add(Dropout(0.2))
+        model.add(LSTM(units=50))
+        model.add(Dropout(0.2))
+        model.add(Dense(units=1))
 
-        tree = DecisionTreeRegressor().fit(x_train, y_train)
-        x_future = data.drop(['Prediction'], 1)[:-future_days]
-        x_future = x_future.tail(future_days)
-        x_future = np.array(x_future)
+        model.compile(optimizer='adam', loss='mean_squared_error')
+        model.fit(x_train, y_train, epochs=20, batch_size=32)
 
-        tree_prediction = tree.predict(x_future)
-        print(tree_prediction)
+        '''' Test the Model Accuracy on Existing Data '''
 
-        predictions = tree_prediction
-        valid = data[X.shape[0]:]
-        valid['Prediction'] = predictions
+        # Load Test Data
+
+        test_start = dt.date(2020, 1, 1)
+        test_end = dt.date.today()
+
+        test_data = get_history(company, test_start, test_end)
+        test_data = test_data.drop(['Symbol', 'Series'], axis=1)
+        print("-------------------------------------test data----------------------------------")
+        print(test_data.head())
+
+        actual_prices = test_data['Close'].values
+        print("---------------------------actual prices-------------------------------")
+        print(actual_prices)
+
+        total_dataset = pd.concat((data['Close'], test_data['Close']))
+
+        print("---------------------------total dataset-------------------------------")
+        print(total_dataset)
+
+        model_inputs = total_dataset[len(total_dataset) - len(test_data) - prediction_days:].values
+        model_inputs = model_inputs.reshape(-1, 1)
+        model_inputs = scaler.transform(model_inputs)
+
+        print("---------------------------model inputs-------------------------------")
+        print(model_inputs)
+
+        # make predictions on test data
+
+        x_test = []
+
+        for x in range(prediction_days, len(model_inputs)):
+            x_test.append(model_inputs[x - prediction_days:x, 0])
+
+        # print("---------------------------x test-------------------------------")
+        # print(x_test)
+        x_test = np.array(x_test)
+        x_test = np.reshape(x_test, (x_test.shape[0], x_test.shape[1], 1))
+
+        # print("---------------------------x test-------------------------------")
+        # print(x_test)
+
+        predictions_prices = model.predict(x_test)
+        predictions_prices = scaler.inverse_transform(predictions_prices)
+
+        print("---------------------------prediction prices-------------------------------")
+        print(predictions_prices)
+        temp = list(test_data.index)
+
+        # for i in range(6):
+        #     temp.append(temp[-1] + dt.timedelta(days=1))
+
+
+
+        print(type(predictions_prices), "                ", type(model_inputs))
+        # predict next day
+        for i in range(choice):
+            real_data = [model_inputs[len(model_inputs) + 1 - prediction_days:len(model_inputs + 1), 0]]
+            real_data = np.array(real_data)
+            real_data = np.reshape(real_data, (real_data.shape[0], real_data.shape[1], 1))
+
+            prediction = model.predict(real_data)
+
+            prediction = scaler.inverse_transform(prediction)
+            predictions_prices = np.append(predictions_prices, prediction[0])
+            predictions_prices = predictions_prices.reshape(-1, 1)
+            model_inputs = np.append(model_inputs, prediction[0])
+            model_inputs = model_inputs.reshape(-1, 1)
+
+            print(f" Prediction :  {prediction}")
+            temp.append(temp[-1] + dt.timedelta(days=1))
+            print(temp[-1], "        ", predictions_prices[-1])
+            i += 1
+
         f1 = plt1.figure(figsize=(13, 4.5))
-        plt1.xlabel('Days')
-        plt1.ylabel('CLOSE PRICE')
-        plt1.title('STOCK PREDICTION')
+
 
         # print("Dates are ",data.iloc[:,0])
         date = data.index
         print("date2 \n\n", data, date)
-        plt1.plot(date, data['Close'],marker='o')
-        plt1.plot(valid[['Close', 'Prediction']],marker = 'o')
+        plt1.plot(test_data.index,actual_prices,color = "black",label = f"Actual {company} Price", marker='o')
+        plt1.plot(temp,predictions_prices,color = 'green' , label = f"Predicted {company} Price", marker='o')
+        plt1.title(f"{company} Share Price")
+        plt1.xlabel('Time')
+        plt1.ylabel(f'{company} Share Price')
+        plt1.legend()
         plt1.grid()
         plt1.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
         plt1.gca().xaxis.set_major_locator(mdates.DayLocator(interval=20))
 
         plt1.gcf().autofmt_xdate()
 
-        plt1.legend(['Org','Value', 'Pred'])
+        plt1.legend(['Org', 'Value', 'Pred'])
 
         return f1
 
@@ -576,7 +628,7 @@ class Stock:
         data = data.drop('Symbol', axis=1)
         data = data.drop('Series', axis=1)
         f2 = plt1.figure(figsize=(13, 4.5))
-        plt1.plot(date, data['Volume'],marker = 'o')
+        plt1.plot(date, data['Volume'], marker='o')
         plt1.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
         plt1.gca().xaxis.set_major_locator(mdates.DayLocator(interval=10))
         plt1.xlabel('Days')
@@ -584,6 +636,8 @@ class Stock:
         plt1.title("days vs volume")
         plt1.gcf().autofmt_xdate()
         return f2
+
+
 if __name__ == "__main__":
     root = tk.Tk()
 
